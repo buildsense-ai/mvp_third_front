@@ -107,10 +107,11 @@ export function ProblemRecordDetailModal({
   }
 
   // 获取处理后的图片数组
-  const imageItems = processImages(record?.images)
+  const imageItems = processImages(record?.originalData?.images || record?.images)
   
   // 添加调试信息
-  console.log('原始图片数据:', record?.images)
+  console.log('原始图片数据:', record?.originalData?.images || record?.images)
+  console.log('完整record数据:', record)
   console.log('处理后的图片数组:', imageItems)
 
   // 处理图片加载错误

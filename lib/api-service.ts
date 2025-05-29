@@ -399,20 +399,31 @@ export async function createOrUpdateIssueRecord(
       throw new Error(`创建/更新问题记录失败: ${response.status}`)
     }
 
-    const data = await response.json()
+    const data = await response.text() // 后端返回字符串消息
     
-    // 获取更新后的记录
-    const updatedRecord = await getIssueRecords(0, 1, undefined, {
-      location: record.问题发生地点,
-      description: record.问题描述
-    })
+    // 操作成功，重新获取记录列表来获取更新后的数据
+    const updatedRecords = await getIssueRecords(0, 100)
+    
+    // 根据位置和描述查找对应的记录
+    const matchingRecord = updatedRecords.find(r => 
+      r.location === record.问题发生地点 && r.description === record.问题描述
+    )
 
     toast({
       title: "操作成功",
-      description: data === "创建成功。" ? "问题记录已成功创建" : "问题记录已成功更新",
+      description: data.includes("创建成功") ? "问题记录已成功创建" : "问题记录已成功更新",
     })
 
-    return updatedRecord[0]
+    // 返回匹配的记录，如果找不到则返回一个基本的记录对象
+    return matchingRecord || {
+      id: Date.now(),
+      location: record.问题发生地点,
+      description: record.问题描述,
+      images: record.相关图片 ? record.相关图片.split(',') : [],
+      record_time: record.记录时间 || new Date().toISOString(),
+      update_time: new Date().toISOString(),
+      status: record.状态 || "待处理"
+    }
   } catch (error) {
     console.error("创建/更新问题记录出错:", error)
     toast({
@@ -549,6 +560,8 @@ export async function updateIssueRecord(
   record: IssueCreateRequest
 ): Promise<IssueRecord> {
   try {
+    console.log("发送更新请求:", { id, record })
+    
     const response = await fetch(`${API_BASE_URL}/issues/${id}`, {
       method: "PUT",
       headers: {
@@ -559,12 +572,17 @@ export async function updateIssueRecord(
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("API响应错误:", response.status, errorText)
+      
       if (response.status === 404) {
         throw new Error("找不到该问题记录")
       } else if (response.status === 502) {
         throw new Error("服务器暂时不可用，请稍后再试")
+      } else if (response.status === 422) {
+        throw new Error(`数据验证失败: ${errorText}`)
       }
-      throw new Error(`更新问题记录失败: ${response.status}`)
+      throw new Error(`更新问题记录失败: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()

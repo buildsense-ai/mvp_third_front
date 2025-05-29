@@ -45,6 +45,7 @@ import {
   getIssueRecords,
   updateIssueRecord,
   deleteIssueRecord,
+  createOrUpdateIssueRecord,
 } from "@/lib/api-service"
 import { IssueRecordCreateModal } from "@/components/issue-record-create-modal"
 import { toast } from "@/components/ui/use-toast"
@@ -306,8 +307,6 @@ export default function EventsPage() {
   const handleSaveEdit = async (updatedRecord: any) => {
     try {
       if (updatedRecord.type === "issue") {
-        const originalId = updatedRecord.id.split('-')[1]
-        
         let backendStatus = "待处理"
         switch (updatedRecord.status) {
           case "pending":
@@ -321,16 +320,19 @@ export default function EventsPage() {
             break
         }
 
+        // 构建符合API要求的数据格式
         const updateData = {
-          问题发生地点: updatedRecord.location || "",
-          问题描述: updatedRecord.title || updatedRecord.description || "",
+          问题发生地点: updatedRecord.location || updatedRecord.originalData?.location || "",
+          问题描述: updatedRecord.title || updatedRecord.description || updatedRecord.originalData?.description || "",
           状态: backendStatus,
-          相关图片: Array.isArray(updatedRecord.相关图片) 
-            ? updatedRecord.相关图片.join(',') 
-            : updatedRecord.相关图片 || '',
+          记录时间: updatedRecord.originalData?.record_time || new Date().toISOString(),
+          相关图片: updatedRecord.originalData?.images?.join(',') || ""
         }
 
-        await updateIssueRecord(originalId, updateData)
+        console.log("提交的更新数据:", JSON.stringify(updateData, null, 2))
+
+        // 使用 createOrUpdateIssueRecord API
+        await createOrUpdateIssueRecord(updateData)
         
         toast({
           title: "更新成功",
@@ -342,9 +344,11 @@ export default function EventsPage() {
       }
     } catch (error) {
       console.error("更新记录失败:", error)
+      // 显示更详细的错误信息
+      const errorMessage = error instanceof Error ? error.message : "更新记录时发生未知错误"
       toast({
         title: "更新失败",
-        description: "更新记录时发生错误，请重试",
+        description: errorMessage,
         variant: "destructive",
       })
     }
