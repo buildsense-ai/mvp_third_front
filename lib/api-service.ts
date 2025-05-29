@@ -147,7 +147,7 @@ export async function updateSupervisionRecord(
   record: Omit<SupervisionRecord, "id" | "created_at" | "updated_at">,
 ): Promise<SupervisionRecord> {
   try {
-    const response = await fetch(`${API_BASE_URL}/pangzhan/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/docx_utils/pangzhan/${id}`, {
       method: "PUT",
       headers: {
         accept: "application/json",
@@ -161,6 +161,15 @@ export async function updateSupervisionRecord(
         throw new Error("找不到该旁站记录")
       } else if (response.status === 502) {
         throw new Error("服务器暂时不可用，请稍后再试")
+      } else if (response.status === 422) {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          const errorDetails = errorData.detail || errorText
+          throw new Error(`数据验证失败: ${JSON.stringify(errorDetails)}`)
+        } catch {
+          throw new Error(`数据验证失败: ${errorText}`)
+        }
       }
       throw new Error(`更新旁站记录失败: ${response.status}`)
     }
@@ -175,12 +184,7 @@ export async function updateSupervisionRecord(
     return data
   } catch (error) {
     console.error("更新旁站记录出错:", error)
-    toast({
-      title: "更新失败",
-      description: error instanceof Error ? error.message : "更新旁站记录时发生错误",
-      variant: "destructive",
-    })
-    throw error
+    throw error // 重新抛出错误，让调用方处理toast显示
   }
 }
 

@@ -36,6 +36,7 @@ import { ProblemRecordDetailModal } from "@/components/problem-record-detail-mod
 import { ProblemRecordEditModal } from "@/components/problem-record-edit-modal"
 import { GenerateNotificationModal } from "@/components/generate-notification-modal"
 import { SupervisionRecordDetailModal } from "@/components/supervision-record-detail-modal"
+import { SupervisionRecordEditModal } from "@/components/supervision-record-edit-modal"
 import { DailyLogDetailModal } from "@/components/daily-log-detail-modal"
 import { MeetingMinutesDetailModal } from "@/components/meeting-minutes-detail-modal"
 import { useRouter } from "next/navigation"
@@ -46,9 +47,11 @@ import {
   updateIssueRecord,
   deleteIssueRecord,
   createOrUpdateIssueRecord,
+  updateSupervisionRecord,
 } from "@/lib/api-service"
 import { IssueRecordCreateModal } from "@/components/issue-record-create-modal"
 import { toast } from "@/components/ui/use-toast"
+import { generateSupervisionRecordDocx } from "@/utils/docx-generator"
 
 // 统一的事件接口
 interface EventRecord {
@@ -134,6 +137,7 @@ export default function EventsPage() {
   
   // 新增模态框状态
   const [supervisionDetailModalOpen, setSupervisionDetailModalOpen] = useState(false)
+  const [supervisionEditModalOpen, setSupervisionEditModalOpen] = useState(false)
   const [dailyLogDetailModalOpen, setDailyLogDetailModalOpen] = useState(false)
   const [meetingMinutesDetailModalOpen, setMeetingMinutesDetailModalOpen] = useState(false)
 
@@ -300,6 +304,8 @@ export default function EventsPage() {
       setSelectedRecord(record)
       if (record.type === "issue") {
         setProblemEditModalOpen(true)
+      } else if (record.type === "supervision") {
+        setSupervisionEditModalOpen(true)
       }
     }
   }
@@ -358,6 +364,37 @@ export default function EventsPage() {
     }
   }
 
+  // 旁站记录编辑保存函数
+  const handleSupervisionSaveEdit = async (updatedRecord: any) => {
+    try {
+      // 从记录ID中提取原始的数据库ID
+      const originalId = selectedRecord?.id.split('-')[1]
+      
+      console.log("提交的旁站记录更新数据:", JSON.stringify(updatedRecord, null, 2))
+      console.log("更新的旁站记录ID:", originalId)
+
+      // 使用旁站记录更新接口
+      await updateSupervisionRecord(originalId, updatedRecord)
+      
+      toast({
+        title: "更新成功",
+        description: "旁站记录已成功更新",
+      })
+      
+      await loadSupervisionRecords()
+      setSupervisionEditModalOpen(false)
+    } catch (error) {
+      console.error("更新旁站记录失败:", error)
+      // 显示更详细的错误信息
+      const errorMessage = error instanceof Error ? error.message : "更新旁站记录时发生未知错误"
+      toast({
+        title: "更新失败",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleGenerateNotification = (recordId: string) => {
     const record = allEvents.find((event) => event.id === recordId)
     if (record) {
@@ -393,17 +430,26 @@ export default function EventsPage() {
     }
   }
 
-  const handleGenerateDocument = (recordId: string, type: string) => {
+  const handleGenerateDocument = async (recordId: string, type: string) => {
     const record = allEvents.find((event) => event.id === recordId)
     if (record) {
       switch (type) {
         case "supervision":
-          console.log("生成旁站记录文档:", recordId)
-          // 这里可以调用 generateSupervisionDocument API
-          toast({
-            title: "生成成功",
-            description: "旁站记录文档正在生成",
-          })
+          try {
+            console.log("生成旁站记录文档:", recordId)
+            const fileName = await generateSupervisionRecordDocx(record.originalData)
+            toast({
+              title: "生成成功",
+              description: `旁站记录文档 "${fileName}" 已生成并下载`,
+            })
+          } catch (error) {
+            console.error("生成旁站记录文档失败:", error)
+            toast({
+              title: "生成失败",
+              description: "生成旁站记录文档时发生错误",
+              variant: "destructive",
+            })
+          }
           break
         case "daily-log":
           console.log("生成监理日志文档:", recordId)
@@ -718,6 +764,14 @@ export default function EventsPage() {
         record={selectedRecord}
         onEdit={handleEdit}
         onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "supervision")}
+      />
+
+      {/* 旁站记录编辑模态框 */}
+      <SupervisionRecordEditModal
+        isOpen={supervisionEditModalOpen}
+        onClose={() => setSupervisionEditModalOpen(false)}
+        record={selectedRecord}
+        onSave={handleSupervisionSaveEdit}
       />
 
       {/* 监理日志详情模态框 */}
