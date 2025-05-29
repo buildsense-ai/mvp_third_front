@@ -320,6 +320,9 @@ export default function EventsPage() {
             break
         }
 
+        // 从记录ID中提取原始的数据库ID
+        const originalId = updatedRecord.id.split('-')[1]
+        
         // 构建符合API要求的数据格式
         const updateData = {
           问题发生地点: updatedRecord.location || updatedRecord.originalData?.location || "",
@@ -330,9 +333,10 @@ export default function EventsPage() {
         }
 
         console.log("提交的更新数据:", JSON.stringify(updateData, null, 2))
+        console.log("更新的问题ID:", originalId)
 
-        // 使用 createOrUpdateIssueRecord API
-        await createOrUpdateIssueRecord(updateData)
+        // 使用专门的更新接口
+        await updateIssueRecord(originalId, updateData)
         
         toast({
           title: "更新成功",

@@ -580,7 +580,13 @@ export async function updateIssueRecord(
       } else if (response.status === 502) {
         throw new Error("服务器暂时不可用，请稍后再试")
       } else if (response.status === 422) {
-        throw new Error(`数据验证失败: ${errorText}`)
+        try {
+          const errorData = JSON.parse(errorText)
+          const errorDetails = errorData.detail || errorText
+          throw new Error(`数据验证失败: ${JSON.stringify(errorDetails)}`)
+        } catch {
+          throw new Error(`数据验证失败: ${errorText}`)
+        }
       }
       throw new Error(`更新问题记录失败: ${response.status} - ${errorText}`)
     }
@@ -595,12 +601,7 @@ export async function updateIssueRecord(
     return data
   } catch (error) {
     console.error("更新问题记录出错:", error)
-    toast({
-      title: "更新失败",
-      description: error instanceof Error ? error.message : "更新问题记录时发生错误",
-      variant: "destructive",
-    })
-    throw error
+    throw error // 重新抛出错误，让调用方处理toast显示
   }
 }
 
