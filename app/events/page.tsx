@@ -555,381 +555,375 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">事件记录</h1>
-          <p className="text-muted-foreground">管理和查看所有事件记录</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="issue">问题记录 ({issueRecords.length})</TabsTrigger>
+            <TabsTrigger value="supervision">旁站记录 ({supervisionRecords.length})</TabsTrigger>
+            <TabsTrigger value="daily-log">监理日志 ({mockDailyLogs.length})</TabsTrigger>
+            <TabsTrigger value="meeting">会议纪要 ({mockMeetingMinutes.length})</TabsTrigger>
+            <TabsTrigger value="documents">已生成文档</TabsTrigger>
+          </TabsList>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="issue">问题记录 ({issueRecords.length})</TabsTrigger>
-          <TabsTrigger value="supervision">旁站记录 ({supervisionRecords.length})</TabsTrigger>
-          <TabsTrigger value="daily-log">监理日志 ({mockDailyLogs.length})</TabsTrigger>
-          <TabsTrigger value="meeting">会议纪要 ({mockMeetingMinutes.length})</TabsTrigger>
-          <TabsTrigger value="documents">已生成文档</TabsTrigger>
-        </TabsList>
-
-        {/* 问题记录 Tab */}
-        <TabsContent value="issue" className="space-y-4">
-          {/* 状态筛选 */}
-          <div className="flex gap-4">
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="选择状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="pending">待处理</SelectItem>
-                <SelectItem value="processing">处理中</SelectItem>
-                <SelectItem value="resolved">已闭环</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 批量操作 */}
-          {selectedEvents.length > 0 && (
-            <div className="flex gap-2 p-4 bg-muted rounded-lg">
-              <span className="text-sm text-muted-foreground">已选择 {selectedEvents.length} 个问题记录</span>
-              <Button variant="outline" size="sm" onClick={() => setShowMergeDialog(true)}>
-                合并事件
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowInspectionDialog(true)}>
-                生成巡检记录
-              </Button>
+          {/* 问题记录 Tab */}
+          <TabsContent value="issue" className="space-y-4">
+            {/* 状态筛选 */}
+            <div className="flex gap-4">
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="选择状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  <SelectItem value="pending">待处理</SelectItem>
+                  <SelectItem value="processing">处理中</SelectItem>
+                  <SelectItem value="resolved">已闭环</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
 
-          {/* 问题记录卡片 */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredIssueRecords.map((event) => (
-              <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedEvents.includes(event.id)}
-                        onCheckedChange={() => handleCheckboxChange(event.id)}
-                      />
-                      <Badge variant="secondary" className={getBadgeColor(event.type)}>
-                        {getEventTypeLabel(event.type)}
-                      </Badge>
+            {/* 批量操作 */}
+            {selectedEvents.length > 0 && (
+              <div className="flex gap-2 p-4 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">已选择 {selectedEvents.length} 个问题记录</span>
+                <Button variant="outline" size="sm" onClick={() => setShowMergeDialog(true)}>
+                  合并事件
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowInspectionDialog(true)}>
+                  生成巡检记录
+                </Button>
+              </div>
+            )}
+
+            {/* 问题记录卡片 */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredIssueRecords.map((event) => (
+                <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedEvents.includes(event.id)}
+                          onCheckedChange={() => handleCheckboxChange(event.id)}
+                        />
+                        <Badge variant="secondary" className={getBadgeColor(event.type)}>
+                          {getEventTypeLabel(event.type)}
+                        </Badge>
+                      </div>
+                      {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
                     </div>
-                    {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
-                  </div>
-                  
-                  <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
+                    
+                    <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
 
-                  <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{event.date}</span>
-                  </div>
-
-                  {event.location && (
                     <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                      <MapPin className="h-3 w-3" />
-                      <span>{event.location}</span>
+                      <Calendar className="h-3 w-3" />
+                      <span>{event.date}</span>
                     </div>
-                  )}
 
-                  {event.responsibleUnit && (
-                    <div className="text-xs text-muted-foreground mt-2">责任单位: {event.responsibleUnit}</div>
-                  )}
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  {event.status && getStatusBadge(event.status)}
-                </CardContent>
-                
-                <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1"
-                          onClick={() => handleGenerateNotification(event.id)}
-                        >
-                          <FileText className="h-3 w-3" />
-                          生成通知单
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>基于此问题生成监理工程师通知单</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                    {event.location && (
+                      <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{event.location}</span>
+                      </div>
+                    )}
 
-                  {canEditEvent(event) && (
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => handleEdit(event.id)}>
-                      <Edit className="h-3 w-3" />
-                      编辑
+                    {event.responsibleUnit && (
+                      <div className="text-xs text-muted-foreground mt-2">责任单位: {event.responsibleUnit}</div>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    {event.status && getStatusBadge(event.status)}
+                  </CardContent>
+                  
+                  <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => handleGenerateNotification(event.id)}
+                          >
+                            <FileText className="h-3 w-3" />
+                            生成通知单
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>基于此问题生成监理工程师通知单</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    {canEditEvent(event) && (
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleEdit(event.id)}>
+                        <Edit className="h-3 w-3" />
+                        编辑
+                      </Button>
+                    )}
+
+                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
+                      查看详情
                     </Button>
-                  )}
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-                  <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
-                    查看详情
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* 旁站记录 Tab */}
-        <TabsContent value="supervision" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {supervisionRecords.map((event) => (
-              <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className={getBadgeColor(event.type)}>
-                        {getEventTypeLabel(event.type)}
-                      </Badge>
+          {/* 旁站记录 Tab */}
+          <TabsContent value="supervision" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {supervisionRecords.map((event) => (
+                <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className={getBadgeColor(event.type)}>
+                          {getEventTypeLabel(event.type)}
+                        </Badge>
+                      </div>
+                      {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
                     </div>
-                    {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
-                  </div>
+                    
+                    <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
+
+                    <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{event.date}</span>
+                    </div>
+
+                    {event.location && (
+                      <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{event.location}</span>
+                      </div>
+                    )}
+
+                    {event.time && (
+                      <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{event.time}</span>
+                      </div>
+                    )}
+                  </CardHeader>
                   
-                  <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
-
-                  <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{event.date}</span>
-                  </div>
-
-                  {event.location && (
-                    <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                      <MapPin className="h-3 w-3" />
-                      <span>{event.location}</span>
-                    </div>
-                  )}
-
-                  {event.time && (
-                    <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{event.time}</span>
-                    </div>
-                  )}
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  {event.status && getStatusBadge(event.status)}
-                </CardContent>
-                
-                <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => handleGenerateDocument(event.id, "supervision")}>
-                    <FileText className="h-3 w-3" />
-                    生成旁站记录
-                  </Button>
-
-                  {canEditEvent(event) && (
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => handleEdit(event.id)}>
-                      <Edit className="h-3 w-3" />
-                      编辑
+                  <CardContent className="pt-0">
+                    {event.status && getStatusBadge(event.status)}
+                  </CardContent>
+                  
+                  <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => handleGenerateDocument(event.id, "supervision")}>
+                      <FileText className="h-3 w-3" />
+                      生成旁站记录
                     </Button>
-                  )}
 
-                  <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
-                    查看详情
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+                    {canEditEvent(event) && (
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleEdit(event.id)}>
+                        <Edit className="h-3 w-3" />
+                        编辑
+                      </Button>
+                    )}
 
-        {/* 监理日志 Tab */}
-        <TabsContent value="daily-log" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockDailyLogs.map((event) => (
-              <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className={getBadgeColor(event.type)}>
-                        {getEventTypeLabel(event.type)}
-                      </Badge>
+                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
+                      查看详情
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* 监理日志 Tab */}
+          <TabsContent value="daily-log" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {mockDailyLogs.map((event) => (
+                <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className={getBadgeColor(event.type)}>
+                          {getEventTypeLabel(event.type)}
+                        </Badge>
+                      </div>
+                      {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
                     </div>
-                    {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
-                  </div>
-                  
-                  <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
+                    
+                    <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
 
-                  <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{event.date}</span>
-                  </div>
-
-                  {event.weather && (
-                    <div className="text-xs text-muted-foreground mb-1">天气: {event.weather}</div>
-                  )}
-                </CardHeader>
-                
-                <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => handleGenerateDocument(event.id, "daily-log")}>
-                    <FileText className="h-3 w-3" />
-                    生成监理日志
-                  </Button>
-
-                  <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
-                    查看详情
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* 会议纪要 Tab */}
-        <TabsContent value="meeting" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockMeetingMinutes.map((event) => (
-              <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className={getBadgeColor(event.type)}>
-                        {getEventTypeLabel(event.type)}
-                      </Badge>
-                    </div>
-                    {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
-                  </div>
-                  
-                  <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
-
-                  <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{event.date}</span>
-                  </div>
-
-                  {event.attendees && (
                     <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
-                      <Users className="h-3 w-3" />
-                      <span>参会人数: {event.attendees}</span>
+                      <Calendar className="h-3 w-3" />
+                      <span>{event.date}</span>
                     </div>
-                  )}
-                </CardHeader>
-                
-                <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => handleGenerateDocument(event.id, "meeting")}>
-                    <FileText className="h-3 w-3" />
-                    生成会议纪要
-                  </Button>
 
-                  <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
-                    查看详情
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+                    {event.weather && (
+                      <div className="text-xs text-muted-foreground mb-1">天气: {event.weather}</div>
+                    )}
+                  </CardHeader>
+                  
+                  <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => handleGenerateDocument(event.id, "daily-log")}>
+                      <FileText className="h-3 w-3" />
+                      生成监理日志
+                    </Button>
 
-        {/* 已生成文档 Tab */}
-        <TabsContent value="documents" className="space-y-4">
-          <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>已生成文档功能开发中...</p>
-          </div>
-        </TabsContent>
-      </Tabs>
+                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
+                      查看详情
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-      {/* Modals */}
-      <ProblemRecordDetailModal
-        isOpen={problemDetailModalOpen}
-        onClose={() => setProblemDetailModalOpen(false)}
-        record={selectedRecord}
-        onGenerateNotification={handleGenerateNotification}
-        onEdit={handleEdit}
-        onDelete={handleDeleteProblemRecord}
-      />
+          {/* 会议纪要 Tab */}
+          <TabsContent value="meeting" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {mockMeetingMinutes.map((event) => (
+                <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className={getBadgeColor(event.type)}>
+                          {getEventTypeLabel(event.type)}
+                        </Badge>
+                      </div>
+                      {event.icon && <event.icon className={`h-4 w-4 ${getIconColor(event.type)}`} />}
+                    </div>
+                    
+                    <h3 className="font-medium line-clamp-2 mb-2">{event.title}</h3>
 
-      <ProblemRecordEditModal
-        isOpen={problemEditModalOpen}
-        onClose={() => setProblemEditModalOpen(false)}
-        record={selectedRecord}
-        onSave={handleSaveEdit}
-      />
+                    <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{event.date}</span>
+                    </div>
 
-      <GenerateNotificationModal
-        isOpen={notificationModalOpen}
-        onClose={() => setNotificationModalOpen(false)}
-        record={selectedRecord}
-        onGenerate={handleConfirmNotification}
-      />
+                    {event.attendees && (
+                      <div className="flex items-center text-xs text-muted-foreground gap-1 mb-1">
+                        <Users className="h-3 w-3" />
+                        <span>参会人数: {event.attendees}</span>
+                      </div>
+                    )}
+                  </CardHeader>
+                  
+                  <CardFooter className="p-4 pt-0 flex justify-end gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => handleGenerateDocument(event.id, "meeting")}>
+                      <FileText className="h-3 w-3" />
+                      生成会议纪要
+                    </Button>
 
-      {/* 旁站记录详情模态框 */}
-      <SupervisionRecordDetailModal
-        isOpen={supervisionDetailModalOpen}
-        onClose={() => setSupervisionDetailModalOpen(false)}
-        record={selectedRecord}
-        onEdit={handleEdit}
-        onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "supervision")}
-      />
+                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(event)}>
+                      查看详情
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-      {/* 旁站记录编辑模态框 */}
-      <SupervisionRecordEditModal
-        isOpen={supervisionEditModalOpen}
-        onClose={() => setSupervisionEditModalOpen(false)}
-        record={selectedRecord}
-        onSave={handleSupervisionSaveEdit}
-      />
+          {/* 已生成文档 Tab */}
+          <TabsContent value="documents" className="space-y-4">
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>已生成文档功能开发中...</p>
+            </div>
+          </TabsContent>
+        </Tabs>
 
-      {/* 监理日志详情模态框 */}
-      <DailyLogDetailModal
-        isOpen={dailyLogDetailModalOpen}
-        onClose={() => setDailyLogDetailModalOpen(false)}
-        record={selectedRecord}
-        onEdit={handleEdit}
-        onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "daily-log")}
-      />
+        {/* Modals */}
+        <ProblemRecordDetailModal
+          isOpen={problemDetailModalOpen}
+          onClose={() => setProblemDetailModalOpen(false)}
+          record={selectedRecord}
+          onGenerateNotification={handleGenerateNotification}
+          onEdit={handleEdit}
+          onDelete={handleDeleteProblemRecord}
+        />
 
-      {/* 会议纪要详情模态框 */}
-      <MeetingMinutesDetailModal
-        isOpen={meetingMinutesDetailModalOpen}
-        onClose={() => setMeetingMinutesDetailModalOpen(false)}
-        record={selectedRecord}
-        onEdit={handleEdit}
-        onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "meeting")}
-      />
+        <ProblemRecordEditModal
+          isOpen={problemEditModalOpen}
+          onClose={() => setProblemEditModalOpen(false)}
+          record={selectedRecord}
+          onSave={handleSaveEdit}
+        />
 
-      {/* 合并事件对话框 */}
-      <Dialog open={showMergeDialog} onOpenChange={setShowMergeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>合并事件</DialogTitle>
-            <DialogDescription>将选中的事件合并为一个综合记录</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMergeDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={() => setShowMergeDialog(false)}>确认合并</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <GenerateNotificationModal
+          isOpen={notificationModalOpen}
+          onClose={() => setNotificationModalOpen(false)}
+          record={selectedRecord}
+          onGenerate={handleConfirmNotification}
+        />
 
-      {/* 生成巡检记录对话框 */}
-      <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>生成巡检记录</DialogTitle>
-            <DialogDescription>基于选中的事件生成巡检记录</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInspectionDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={() => setShowInspectionDialog(false)}>生成记录</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* 旁站记录详情模态框 */}
+        <SupervisionRecordDetailModal
+          isOpen={supervisionDetailModalOpen}
+          onClose={() => setSupervisionDetailModalOpen(false)}
+          record={selectedRecord}
+          onEdit={handleEdit}
+          onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "supervision")}
+        />
+
+        {/* 旁站记录编辑模态框 */}
+        <SupervisionRecordEditModal
+          isOpen={supervisionEditModalOpen}
+          onClose={() => setSupervisionEditModalOpen(false)}
+          record={selectedRecord}
+          onSave={handleSupervisionSaveEdit}
+        />
+
+        {/* 监理日志详情模态框 */}
+        <DailyLogDetailModal
+          isOpen={dailyLogDetailModalOpen}
+          onClose={() => setDailyLogDetailModalOpen(false)}
+          record={selectedRecord}
+          onEdit={handleEdit}
+          onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "daily-log")}
+        />
+
+        {/* 会议纪要详情模态框 */}
+        <MeetingMinutesDetailModal
+          isOpen={meetingMinutesDetailModalOpen}
+          onClose={() => setMeetingMinutesDetailModalOpen(false)}
+          record={selectedRecord}
+          onEdit={handleEdit}
+          onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "meeting")}
+        />
+
+        {/* 合并事件对话框 */}
+        <Dialog open={showMergeDialog} onOpenChange={setShowMergeDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>合并事件</DialogTitle>
+              <DialogDescription>将选中的事件合并为一个综合记录</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowMergeDialog(false)}>
+                取消
+              </Button>
+              <Button onClick={() => setShowMergeDialog(false)}>确认合并</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 生成巡检记录对话框 */}
+        <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>生成巡检记录</DialogTitle>
+              <DialogDescription>基于选中的事件生成巡检记录</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowInspectionDialog(false)}>
+                取消
+              </Button>
+              <Button onClick={() => setShowInspectionDialog(false)}>生成记录</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
-}
+} 
