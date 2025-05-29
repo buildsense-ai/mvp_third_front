@@ -13,9 +13,6 @@ const DashboardMain = () => {
           <a href={routes.dashboard}>Dashboard</a>
         </li>
         <li>
-          <a href={routes.dailyLogs}>Daily Logs</a>
-        </li>
-        <li>
           <a href={routes.documents}>Documents</a>
         </li>
         <li>

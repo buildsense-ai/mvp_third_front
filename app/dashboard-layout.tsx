@@ -6,15 +6,10 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  ClipboardList,
-  FileText,
-  Home,
   Menu,
   AlertCircle,
-  FileCheck,
-  Calendar,
+  FileText,
   FileQuestion,
-  BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -30,39 +25,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const routes = [
     {
-      href: "/",
-      label: "概览",
-      icon: Home,
-    },
-    {
-      href: "/issues",
-      label: "问题记录",
+      href: "/dashboard/events",
+      label: "事件记录",
       icon: AlertCircle,
     },
     {
-      href: "/documents",
+      href: "/dashboard/documents",
       label: "已生成文档",
       icon: FileText,
-    },
-    {
-      href: "/supervision",
-      label: "旁站记录",
-      icon: ClipboardList,
-    },
-    {
-      href: "/daily-logs",
-      label: "监理日志",
-      icon: Calendar,
-    },
-    {
-      href: "/meeting-minutes",
-      label: "会议纪要",
-      icon: FileCheck,
-    },
-    {
-      href: "/knowledge-base",
-      label: "规范知识库",
-      icon: BookOpen,
     },
   ]
 
@@ -76,11 +46,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex items-center gap-2">
           <FileQuestion className="h-6 w-6" />
           <span className="font-semibold">巡检记录助手</span>
-        </div>
-        <div className="ml-auto flex items-center gap-4">
-          <Button variant="outline" size="sm">
-            返回对话
-          </Button>
         </div>
       </header>
       <div className="flex flex-1">

@@ -212,8 +212,8 @@ export function ProblemRecordDetailModal({
                         alt="问题图片"
                         className="object-cover w-full h-full"
                         onError={handleImageError}
-                      />
-                    </div>
+                    />
+                  </div>
                   )
                 })}
               </div>

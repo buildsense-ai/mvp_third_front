@@ -17,8 +17,6 @@ export default function DashboardLayout({
 
   const getPageTitle = () => {
     switch (pathname) {
-      case "/dashboard":
-        return "看板概览"
       case "/dashboard/events":
         return "事件记录"
       case "/dashboard/documents":
@@ -30,7 +28,7 @@ export default function DashboardLayout({
         if (pathname.startsWith("/dashboard/documents/")) {
           return "文档详情"
         }
-        return "看板"
+        return "巡检记录助手"
     }
   }
 
@@ -38,7 +36,7 @@ export default function DashboardLayout({
     <div className="flex flex-col min-h-screen">
       <MobileNav />
       <div className="p-4 flex items-center gap-2 border-b">
-        <Link href="/">
+        <Link href="/dashboard/events">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>

@@ -1,5 +1,5 @@
-import { ConversationPanel } from "@/components/conversation-panel"
+import { redirect } from "next/navigation"
 
 export default function Home() {
-  return <ConversationPanel />
+  redirect("/dashboard/events")
 }

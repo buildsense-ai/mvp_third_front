@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, MessageSquare, FileQuestion, CalendarDays, FileText } from "lucide-react"
+import { Menu, X, FileQuestion, CalendarDays, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
@@ -13,16 +13,6 @@ export function MobileNav() {
   const pathname = usePathname()
 
   const routes = [
-    {
-      href: "/",
-      label: "对话",
-      icon: MessageSquare,
-    },
-    {
-      href: "/dashboard",
-      label: "概览",
-      icon: FileQuestion,
-    },
     {
       href: "/dashboard/events",
       label: "事件记录",
