@@ -11,6 +11,7 @@ import { createIssueRecord } from "@/lib/api-service"
 import Image from "next/image"
 import { toast } from "@/components/ui/use-toast"
 import { UPLOAD_BASE_URL } from "@/lib/api-service"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface IssueRecordCreateModalProps {
   isOpen: boolean
@@ -159,6 +160,19 @@ export function IssueRecordCreateModal({ isOpen, onClose, onSuccess }: IssueReco
               placeholder="请详细描述发现的问题"
               rows={3}
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="status">状态</Label>
+            <Select value={formData.状态} onValueChange={(value) => handleChange("状态", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="待处理">待处理</SelectItem>
+                <SelectItem value="已闭环">已闭环</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-2">

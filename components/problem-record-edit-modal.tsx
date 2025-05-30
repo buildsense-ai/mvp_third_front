@@ -92,7 +92,6 @@ export function ProblemRecordEditModal({ isOpen, onClose, record, onSave }: Prob
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pending">待处理</SelectItem>
-                <SelectItem value="processing">处理中</SelectItem>
                 <SelectItem value="resolved">已闭环</SelectItem>
               </SelectContent>
             </Select>

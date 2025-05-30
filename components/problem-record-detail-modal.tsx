@@ -97,8 +97,6 @@ export function ProblemRecordDetailModal({
     switch (status) {
       case "pending":
         return <Badge variant="destructive">待处理</Badge>
-      case "processing":
-        return <Badge variant="secondary">处理中</Badge>
       case "resolved":
         return <Badge variant="outline">已闭环</Badge>
       default:
@@ -246,7 +244,7 @@ export function ProblemRecordDetailModal({
           )}
           <Button className="gap-2" onClick={() => onGenerateNotification(record.id)}>
             <FileText className="h-4 w-4" />
-            生成通知单
+            生成问题文档
           </Button>
           <Button variant="destructive" onClick={() => onDelete(record.id)}>
             删除

@@ -645,6 +645,141 @@ export async function deleteIssueRecord(id: number | string): Promise<boolean> {
   }
 }
 
+// 合并问题记录请求接口
+export interface MergeIssuesRequest {
+  issue_ids: number[]
+}
+
+// 合并问题记录响应接口
+export interface MergedIssueResponse {
+  merged_issue: {
+    id: number
+    location: string
+    description: string
+    images: string[]
+    record_time: string
+    update_time: string
+    status: string
+    is_merged: boolean
+    merged_from_ids: number[]
+  }
+}
+
+// 合并问题记录
+export async function mergeIssueRecords(issueIds: number[]): Promise<MergedIssueResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/merge-issues`, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ issue_ids: issueIds }),
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("未找到指定的问题记录")
+      } else if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      } else if (response.status === 422) {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          const errorDetails = errorData.detail || errorText
+          throw new Error(`数据验证失败: ${JSON.stringify(errorDetails)}`)
+        } catch {
+          throw new Error(`数据验证失败: ${errorText}`)
+        }
+      }
+      throw new Error(`合并问题记录失败: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    toast({
+      title: "合并成功",
+      description: `已成功合并 ${issueIds.length} 个问题记录`,
+    })
+
+    return data
+  } catch (error) {
+    console.error("合并问题记录出错:", error)
+    const errorMessage = error instanceof Error ? error.message : "合并问题记录时发生未知错误"
+    toast({
+      title: "合并失败",
+      description: errorMessage,
+      variant: "destructive",
+    })
+    throw error
+  }
+}
+
+// 生成问题记录文档响应接口
+export interface GenerateIssueDocResponse {
+  issue_id: number
+  id: number
+  location: string
+  doc_url: string
+}
+
+// 生成问题记录文档
+export async function generateIssueDocument(issueId: number): Promise<GenerateIssueDocResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/generate_issue_doc/${issueId}`, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("未找到指定的问题记录")
+      } else if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      } else if (response.status === 500) {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          throw new Error(errorData.detail || "服务器内部错误")
+        } catch {
+          throw new Error("服务器内部错误")
+        }
+      }
+      throw new Error(`生成问题记录文档失败: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    toast({
+      title: "生成成功",
+      description: `问题记录文档已生成，文档ID: ${data.id}`,
+    })
+
+    // 触发文档下载
+    if (data.doc_url) {
+      const link = document.createElement('a')
+      link.href = data.doc_url
+      link.download = `问题记录_${data.issue_id}_${new Date().toISOString().slice(0, 10)}.docx`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+
+    return data
+  } catch (error) {
+    console.error("生成问题记录文档出错:", error)
+    const errorMessage = error instanceof Error ? error.message : "生成问题记录文档时发生未知错误"
+    toast({
+      title: "生成失败",
+      description: errorMessage,
+      variant: "destructive",
+    })
+    throw error
+  }
+}
+
 const processImages = (images: string | string[] | undefined): Array<{url: string, id: string}> => {
   if (!images) return []
 

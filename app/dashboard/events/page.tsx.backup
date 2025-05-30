@@ -316,9 +316,6 @@ export default function EventsPage() {
           case "pending":
             statusFilter = "待处理"
             break
-          case "processing":
-            statusFilter = "处理中"
-            break
           case "resolved":
             statusFilter = "已闭环"
             break
@@ -337,9 +334,6 @@ export default function EventsPage() {
         switch (record.status) {
           case "待处理":
             frontendStatus = "pending"
-            break
-          case "处理中":
-            frontendStatus = "processing"
             break
           case "已闭环":
             frontendStatus = "resolved"
@@ -510,8 +504,6 @@ export default function EventsPage() {
     switch (status) {
       case "pending":
         return <Badge variant="destructive">待处理</Badge>
-      case "processing":
-        return <Badge variant="secondary">处理中</Badge>
       case "resolved":
         return <Badge variant="default">已闭环</Badge>
       default:
@@ -560,9 +552,6 @@ export default function EventsPage() {
         switch (updatedRecord.status) {
           case "pending":
             backendStatus = "待处理"
-            break
-          case "processing":
-            backendStatus = "处理中"
             break
           case "resolved":
             backendStatus = "已闭环"
@@ -676,7 +665,6 @@ export default function EventsPage() {
             <SelectContent>
               <SelectItem value="all">全部状态</SelectItem>
               <SelectItem value="pending">待处理</SelectItem>
-              <SelectItem value="processing">处理中</SelectItem>
               <SelectItem value="resolved">已闭环</SelectItem>
             </SelectContent>
           </Select>

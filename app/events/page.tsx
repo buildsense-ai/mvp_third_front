@@ -48,6 +48,8 @@ import {
   deleteIssueRecord,
   createOrUpdateIssueRecord,
   updateSupervisionRecord,
+  mergeIssueRecords,
+  generateIssueDocument,
 } from "@/lib/api-service"
 import { toast } from "@/components/ui/use-toast"
 import { generateSupervisionRecordDocx } from "@/utils/docx-generator"
@@ -120,6 +122,8 @@ export default function EventsPage() {
   const [selectedEvents, setSelectedEvents] = useState<string[]>([])
   const [showMergeDialog, setShowMergeDialog] = useState(false)
   const [showInspectionDialog, setShowInspectionDialog] = useState(false)
+  const [isMerging, setIsMerging] = useState(false)
+  const [isGeneratingDoc, setIsGeneratingDoc] = useState(false)
 
   // 各种记录状态
   const [issueRecords, setIssueRecords] = useState<EventRecord[]>([])
@@ -150,9 +154,6 @@ export default function EventsPage() {
           case "pending":
             statusFilter = "待处理"
             break
-          case "processing":
-            statusFilter = "处理中"
-            break
           case "resolved":
             statusFilter = "已闭环"
             break
@@ -168,9 +169,6 @@ export default function EventsPage() {
         switch (record.status) {
           case "待处理":
             frontendStatus = "pending"
-            break
-          case "处理中":
-            frontendStatus = "processing"
             break
           case "已闭环":
             frontendStatus = "resolved"
@@ -325,9 +323,6 @@ export default function EventsPage() {
           case "pending":
             backendStatus = "待处理"
             break
-          case "processing":
-            backendStatus = "处理中"
-            break
           case "resolved":
             backendStatus = "已闭环"
             break
@@ -410,9 +405,33 @@ export default function EventsPage() {
     }
   }
 
-  const handleConfirmNotification = (recordId: string) => {
-    console.log("生成通知单:", recordId)
-    setNotificationModalOpen(false)
+  const handleConfirmNotification = async (recordId: string) => {
+    try {
+      setIsGeneratingDoc(true)
+      
+      // 从记录ID中提取原始的数据库ID
+      const originalId = recordId.split('-')[1]
+      
+      if (!originalId || isNaN(Number(originalId))) {
+        throw new Error("无效的问题记录ID")
+      }
+
+      console.log("生成问题记录文档:", originalId)
+      
+      // 调用后端API生成文档
+      const result = await generateIssueDocument(Number(originalId))
+      
+      console.log("生成文档结果:", result)
+      
+      // 关闭模态框
+      setNotificationModalOpen(false)
+      
+    } catch (error) {
+      console.error("生成通知单失败:", error)
+      // toast已经在API函数中处理了，这里不需要再次显示
+    } finally {
+      setIsGeneratingDoc(false)
+    }
   }
 
   const handleDeleteProblemRecord = async (recordId: string) => {
@@ -434,6 +453,60 @@ export default function EventsPage() {
         description: "删除记录时发生错误，请重试",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleMergeEvents = async () => {
+    if (selectedEvents.length < 2) {
+      toast({
+        title: "合并失败",
+        description: "至少需要选择2个问题记录才能合并",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsMerging(true)
+      
+      // 从选中的事件ID中提取原始的数据库ID
+      const issueIds: number[] = []
+      for (const eventId of selectedEvents) {
+        const event = allEvents.find(e => e.id === eventId)
+        if (event?.type === "issue") {
+          // 从格式如 "issue-123-timestamp-index" 中提取 123
+          const originalId = eventId.split('-')[1]
+          if (originalId && !isNaN(Number(originalId))) {
+            issueIds.push(Number(originalId))
+          }
+        }
+      }
+
+      if (issueIds.length === 0) {
+        throw new Error("没有找到有效的问题记录ID")
+      }
+
+      console.log("合并问题记录IDs:", issueIds)
+      
+      // 调用后端API合并问题记录
+      const result = await mergeIssueRecords(issueIds)
+      
+      console.log("合并结果:", result)
+      
+      // 清空选中的事件
+      setSelectedEvents([])
+      
+      // 重新加载问题记录以显示合并后的结果
+      await loadIssueRecords()
+      
+      // 关闭对话框
+      setShowMergeDialog(false)
+      
+    } catch (error) {
+      console.error("合并事件失败:", error)
+      // toast已经在API函数中处理了，这里不需要再次显示
+    } finally {
+      setIsMerging(false)
     }
   }
 
@@ -526,8 +599,6 @@ export default function EventsPage() {
     switch (status) {
       case "pending":
         return <Badge variant="destructive">待处理</Badge>
-      case "processing":
-        return <Badge variant="secondary">处理中</Badge>
       case "resolved":
         return <Badge variant="default">已闭环</Badge>
       default:
@@ -578,7 +649,6 @@ export default function EventsPage() {
                 <SelectContent>
                   <SelectItem value="all">全部状态</SelectItem>
                   <SelectItem value="pending">待处理</SelectItem>
-                  <SelectItem value="processing">处理中</SelectItem>
                   <SelectItem value="resolved">已闭环</SelectItem>
                 </SelectContent>
               </Select>
@@ -587,9 +657,22 @@ export default function EventsPage() {
             {/* 批量操作 */}
             {selectedEvents.length > 0 && (
               <div className="flex gap-2 p-4 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">已选择 {selectedEvents.length} 个问题记录</span>
-                <Button variant="outline" size="sm" onClick={() => setShowMergeDialog(true)}>
-                  合并事件
+                <span className="text-sm text-muted-foreground">
+                  已选择 {selectedEvents.filter(id => {
+                    const event = allEvents.find(e => e.id === id)
+                    return event?.type === "issue"
+                  }).length} 个问题记录
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowMergeDialog(true)}
+                  disabled={selectedEvents.filter(id => {
+                    const event = allEvents.find(e => e.id === id)
+                    return event?.type === "issue"
+                  }).length < 2}
+                >
+                  合并问题记录
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowInspectionDialog(true)}>
                   生成巡检记录
@@ -649,11 +732,11 @@ export default function EventsPage() {
                             onClick={() => handleGenerateNotification(event.id)}
                           >
                             <FileText className="h-3 w-3" />
-                            生成通知单
+                            生成问题文档
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>基于此问题生成监理工程师通知单</p>
+                          <p>生成基于此问题记录的Word文档并下载</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -855,6 +938,7 @@ export default function EventsPage() {
           onClose={() => setNotificationModalOpen(false)}
           record={selectedRecord}
           onGenerate={handleConfirmNotification}
+          isGenerating={isGeneratingDoc}
         />
 
         {/* 旁站记录详情模态框 */}
@@ -894,16 +978,68 @@ export default function EventsPage() {
 
         {/* 合并事件对话框 */}
         <Dialog open={showMergeDialog} onOpenChange={setShowMergeDialog}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>合并事件</DialogTitle>
-              <DialogDescription>将选中的事件合并为一个综合记录</DialogDescription>
+              <DialogTitle>合并问题记录</DialogTitle>
+              <DialogDescription>
+                将选中的 {selectedEvents.length} 个问题记录合并为一个新的综合记录
+              </DialogDescription>
             </DialogHeader>
+            
+            <div className="max-h-[400px] overflow-y-auto space-y-3">
+              <h4 className="font-medium text-sm">选中的问题记录：</h4>
+              {selectedEvents.map((eventId) => {
+                const event = allEvents.find(e => e.id === eventId)
+                if (!event || event.type !== "issue") return null
+                
+                return (
+                  <div key={eventId} className="border rounded-md p-3 space-y-2">
+                    <div className="font-medium text-sm line-clamp-2">{event.title}</div>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{event.location}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>{event.date}</span>
+                      </div>
+                    </div>
+                    {event.status && (
+                      <div className="pt-1">
+                        {getStatusBadge(event.status)}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            
+            <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md">
+              <div className="font-medium mb-1">合并规则：</div>
+              <ul className="text-xs space-y-1 list-disc list-inside">
+                <li>所有问题的地点信息将被合并（去重）</li>
+                <li>问题描述将按序号编排组合</li>
+                <li>相关图片将合并（去重）</li>
+                <li>记录时间以最早的问题为准</li>
+                <li>原问题记录将被标记为"已合并"状态</li>
+              </ul>
+            </div>
+            
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowMergeDialog(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowMergeDialog(false)}
+                disabled={isMerging}
+              >
                 取消
               </Button>
-              <Button onClick={() => setShowMergeDialog(false)}>确认合并</Button>
+              <Button 
+                onClick={handleMergeEvents}
+                disabled={isMerging || selectedEvents.length < 2}
+              >
+                {isMerging ? "合并中..." : `确认合并 (${selectedEvents.length})`}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
