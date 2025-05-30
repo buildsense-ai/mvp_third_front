@@ -808,3 +808,409 @@ const processImages = (images: string | string[] | undefined): Array<{url: strin
 
   return []
 }
+
+// 监理日志相关接口类型定义
+export interface SupervisionLog {
+  id?: string
+  project_id: string
+  supervisor_name: string
+  date: string
+  weather?: string
+  temperature?: string
+  morning_management?: number
+  morning_skilled_workers?: number
+  morning_laborers?: number
+  afternoon_management?: number
+  afternoon_skilled_workers?: number
+  afternoon_laborers?: number
+  construction_activities?: string
+  supervision_activities?: string
+  quality_issues?: string
+  safety_issues?: string
+  progress_issues?: string
+  cost_issues?: string
+  other_matters?: string
+  status: 'draft' | 'submitted' | 'approved' | 'rejected'
+  created_at?: string
+  updated_at?: string
+}
+
+export interface SupervisionLogCreateRequest {
+  project_id: string
+  supervisor_name: string
+  date: string
+  weather?: string
+  temperature?: string
+  morning_management?: number
+  morning_skilled_workers?: number
+  morning_laborers?: number
+  afternoon_management?: number
+  afternoon_skilled_workers?: number
+  afternoon_laborers?: number
+  construction_activities?: string
+  supervision_activities?: string
+  quality_issues?: string
+  safety_issues?: string
+  progress_issues?: string
+  cost_issues?: string
+  other_matters?: string
+  status?: 'draft' | 'submitted' | 'approved' | 'rejected'
+}
+
+export interface SupervisionLogUpdateRequest extends Partial<SupervisionLogCreateRequest> {}
+
+export interface SupervisionLogListResponse {
+  total: number
+  logs: SupervisionLog[]
+}
+
+export interface SupervisionLogStatusUpdate {
+  status: 'draft' | 'submitted' | 'approved' | 'rejected'
+}
+
+// 创建监理日志
+export async function createSupervisionLog(logData: SupervisionLogCreateRequest): Promise<SupervisionLog> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/sup/logs/`, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(logData),
+    })
+
+    if (!response.ok) {
+      if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      } else if (response.status === 400) {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          throw new Error(errorData.detail || "数据验证失败")
+        } catch {
+          throw new Error("数据验证失败")
+        }
+      }
+      throw new Error(`创建监理日志失败: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    toast({
+      title: "创建成功",
+      description: "监理日志已成功创建",
+    })
+
+    return data
+  } catch (error) {
+    console.error("创建监理日志出错:", error)
+    toast({
+      title: "创建失败", 
+      description: error instanceof Error ? error.message : "创建监理日志时发生错误",
+      variant: "destructive",
+    })
+    throw error
+  }
+}
+
+// 获取监理日志列表
+export async function getSupervisionLogs(
+  skip = 0,
+  limit = 100,
+  filters?: {
+    project_id?: string
+    supervisor_name?: string
+    status?: string
+    date_from?: string
+    date_to?: string
+  }
+): Promise<SupervisionLogListResponse> {
+  try {
+    let url = `${API_BASE_URL}/sup/logs/?skip=${skip}&limit=${limit}`
+    
+    if (filters) {
+      if (filters.project_id) url += `&project_id=${encodeURIComponent(filters.project_id)}`
+      if (filters.supervisor_name) url += `&supervisor_name=${encodeURIComponent(filters.supervisor_name)}`
+      if (filters.status) url += `&status=${encodeURIComponent(filters.status)}`
+      if (filters.date_from) url += `&date_from=${filters.date_from}`
+      if (filters.date_to) url += `&date_to=${filters.date_to}`
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      }
+      throw new Error(`获取监理日志列表失败: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("获取监理日志列表出错:", error)
+    throw error
+  }
+}
+
+// 获取单个监理日志
+export async function getSupervisionLog(logId: string): Promise<SupervisionLog> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/sup/logs/${logId}`, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("找不到该监理日志")
+      } else if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      }
+      throw new Error(`获取监理日志失败: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("获取监理日志出错:", error)
+    throw error
+  }
+}
+
+// 更新监理日志
+export async function updateSupervisionLog(
+  logId: string,
+  logData: SupervisionLogUpdateRequest
+): Promise<SupervisionLog> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/sup/logs/${logId}`, {
+      method: "PUT",
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(logData),
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("找不到该监理日志")
+      } else if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      } else if (response.status === 400) {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          throw new Error(errorData.detail || "数据验证失败")
+        } catch {
+          throw new Error("数据验证失败")
+        }
+      }
+      throw new Error(`更新监理日志失败: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    toast({
+      title: "更新成功",
+      description: "监理日志已成功更新",
+    })
+
+    return data
+  } catch (error) {
+    console.error("更新监理日志出错:", error)
+    throw error
+  }
+}
+
+// 更新监理日志状态
+export async function updateSupervisionLogStatus(
+  logId: string,
+  statusData: SupervisionLogStatusUpdate
+): Promise<SupervisionLog> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/sup/logs/${logId}/status`, {
+      method: "PATCH",
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(statusData),
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("找不到该监理日志")
+      } else if (response.status === 400) {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          throw new Error(errorData.detail || "状态值无效")
+        } catch {
+          throw new Error("状态值无效")
+        }
+      } else if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      }
+      throw new Error(`更新监理日志状态失败: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    toast({
+      title: "状态更新成功",
+      description: `监理日志状态已更新为: ${statusData.status}`,
+    })
+
+    return data
+  } catch (error) {
+    console.error("更新监理日志状态出错:", error)
+    throw error
+  }
+}
+
+// 删除监理日志
+export async function deleteSupervisionLog(logId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/sup/logs/${logId}`, {
+      method: "DELETE",
+      headers: {
+        accept: "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("找不到该监理日志")
+      } else if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      }
+      throw new Error(`删除监理日志失败: ${response.status}`)
+    }
+
+    toast({
+      title: "删除成功",
+      description: "监理日志已成功删除",
+    })
+
+    return true
+  } catch (error) {
+    console.error("删除监理日志出错:", error)
+    toast({
+      title: "删除失败",
+      description: error instanceof Error ? error.message : "删除监理日志时发生错误",
+      variant: "destructive",
+    })
+    return false
+  }
+}
+
+// 按项目获取监理日志
+export async function getSupervisionLogsByProject(
+  projectId: string,
+  skip = 0,
+  limit = 100
+): Promise<SupervisionLogListResponse> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/sup/logs/by_project/${projectId}?skip=${skip}&limit=${limit}`,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    )
+
+    if (!response.ok) {
+      if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      }
+      throw new Error(`获取项目监理日志失败: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("获取项目监理日志出错:", error)
+    throw error
+  }
+}
+
+// 按监理人员获取监理日志
+export async function getSupervisionLogsBySupervisor(
+  supervisorName: string,
+  skip = 0,
+  limit = 100
+): Promise<SupervisionLogListResponse> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/sup/logs/by_supervisor/${supervisorName}?skip=${skip}&limit=${limit}`,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    )
+
+    if (!response.ok) {
+      if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      }
+      throw new Error(`获取监理人员日志失败: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("获取监理人员日志出错:", error)
+    throw error
+  }
+}
+
+// 获取监理日志统计信息
+export async function getSupervisionStats(filters?: {
+  project_id?: string
+  date_from?: string
+  date_to?: string
+}): Promise<any> {
+  try {
+    let url = `${API_BASE_URL}/sup/stats/summary`
+    const params = new URLSearchParams()
+    
+    if (filters) {
+      if (filters.project_id) params.append('project_id', filters.project_id)
+      if (filters.date_from) params.append('date_from', filters.date_from)
+      if (filters.date_to) params.append('date_to', filters.date_to)
+    }
+    
+    if (params.toString()) {
+      url += `?${params.toString()}`
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 502) {
+        throw new Error("服务器暂时不可用，请稍后再试")
+      }
+      throw new Error(`获取监理日志统计信息失败: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("获取监理日志统计信息出错:", error)
+    throw error
+  }
+}

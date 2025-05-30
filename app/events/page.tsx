@@ -38,6 +38,7 @@ import { GenerateNotificationModal } from "@/components/generate-notification-mo
 import { SupervisionRecordDetailModal } from "@/components/supervision-record-detail-modal"
 import { SupervisionRecordEditModal } from "@/components/supervision-record-edit-modal"
 import { DailyLogDetailModal } from "@/components/daily-log-detail-modal"
+import { DailyLogEditModal } from "@/components/daily-log-edit-modal"
 import { MeetingMinutesDetailModal } from "@/components/meeting-minutes-detail-modal"
 import { useRouter } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -50,6 +51,10 @@ import {
   updateSupervisionRecord,
   mergeIssueRecords,
   generateIssueDocument,
+  getSupervisionLogs,
+  updateSupervisionLog,
+  createSupervisionLog,
+  deleteSupervisionLog,
 } from "@/lib/api-service"
 import { toast } from "@/components/ui/use-toast"
 import { generateSupervisionRecordDocx } from "@/utils/docx-generator"
@@ -128,8 +133,10 @@ export default function EventsPage() {
   // 各种记录状态
   const [issueRecords, setIssueRecords] = useState<EventRecord[]>([])
   const [supervisionRecords, setSupervisionRecords] = useState<EventRecord[]>([])
+  const [dailyLogRecords, setDailyLogRecords] = useState<EventRecord[]>([])
   const [loadingIssues, setLoadingIssues] = useState(true)
   const [loadingSupervision, setLoadingSupervision] = useState(true)
+  const [loadingDailyLogs, setLoadingDailyLogs] = useState(true)
 
   // Modal状态
   const [problemDetailModalOpen, setProblemDetailModalOpen] = useState(false)
@@ -141,6 +148,7 @@ export default function EventsPage() {
   const [supervisionDetailModalOpen, setSupervisionDetailModalOpen] = useState(false)
   const [supervisionEditModalOpen, setSupervisionEditModalOpen] = useState(false)
   const [dailyLogDetailModalOpen, setDailyLogDetailModalOpen] = useState(false)
+  const [dailyLogEditModalOpen, setDailyLogEditModalOpen] = useState(false)
   const [meetingMinutesDetailModalOpen, setMeetingMinutesDetailModalOpen] = useState(false)
 
   // 加载问题记录数据
@@ -232,10 +240,37 @@ export default function EventsPage() {
     }
   }
 
+  // 加载监理日志数据
+  const loadDailyLogs = async () => {
+    try {
+      setLoadingDailyLogs(true)
+      const response = await getSupervisionLogs(0, 50)
+
+      const processedRecords: EventRecord[] = response.logs.map((log) => ({
+        id: `daily-log-${log.id}`,
+        type: "daily-log",
+        title: `监理日志 - ${log.date}`,
+        date: log.date,
+        weather: log.weather,
+        status: log.status,
+        icon: Calendar,
+        originalData: log,
+      }))
+
+      setDailyLogRecords(processedRecords)
+    } catch (error) {
+      console.error("加载监理日志失败:", error)
+      // 如果API失败，使用模拟数据
+      setDailyLogRecords(mockDailyLogs)
+    } finally {
+      setLoadingDailyLogs(false)
+    }
+  }
+
   // 合并所有事件
   const allEvents = useMemo(() => {
-    return [...issueRecords, ...supervisionRecords, ...mockDailyLogs, ...mockMeetingMinutes]
-  }, [issueRecords, supervisionRecords])
+    return [...issueRecords, ...supervisionRecords, ...dailyLogRecords, ...mockMeetingMinutes]
+  }, [issueRecords, supervisionRecords, dailyLogRecords])
 
   // 筛选问题记录
   const filteredIssueRecords = useMemo(() => {
@@ -270,6 +305,10 @@ export default function EventsPage() {
 
   useEffect(() => {
     loadSupervisionRecords()
+  }, [])
+
+  useEffect(() => {
+    loadDailyLogs()
   }, [])
 
   // 事件处理函数
@@ -311,6 +350,8 @@ export default function EventsPage() {
         setProblemEditModalOpen(true)
       } else if (record.type === "supervision") {
         setSupervisionEditModalOpen(true)
+      } else if (record.type === "daily-log") {
+        setDailyLogEditModalOpen(true)
       }
     }
   }
@@ -389,6 +430,37 @@ export default function EventsPage() {
       console.error("更新旁站记录失败:", error)
       // 显示更详细的错误信息
       const errorMessage = error instanceof Error ? error.message : "更新旁站记录时发生未知错误"
+      toast({
+        title: "更新失败",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    }
+  }
+
+  // 监理日志编辑保存函数
+  const handleDailyLogSaveEdit = async (updatedRecord: any) => {
+    try {
+      // 从记录ID中提取原始的数据库ID
+      const originalId = selectedRecord?.id.split('-')[2] // daily-log-{id} 格式
+      
+      console.log("提交的监理日志更新数据:", JSON.stringify(updatedRecord, null, 2))
+      console.log("更新的监理日志ID:", originalId)
+
+      // 使用监理日志更新接口
+      await updateSupervisionLog(originalId, updatedRecord)
+      
+      toast({
+        title: "更新成功",
+        description: "监理日志已成功更新",
+      })
+      
+      await loadDailyLogs()
+      setDailyLogEditModalOpen(false)
+    } catch (error) {
+      console.error("更新监理日志失败:", error)
+      // 显示更详细的错误信息
+      const errorMessage = error instanceof Error ? error.message : "更新监理日志时发生未知错误"
       toast({
         title: "更新失败",
         description: errorMessage,
@@ -633,7 +705,7 @@ export default function EventsPage() {
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="issue">问题记录 ({issueRecords.length})</TabsTrigger>
             <TabsTrigger value="supervision">旁站记录 ({supervisionRecords.length})</TabsTrigger>
-            <TabsTrigger value="daily-log">监理日志 ({mockDailyLogs.length})</TabsTrigger>
+            <TabsTrigger value="daily-log">监理日志 ({dailyLogRecords.length})</TabsTrigger>
             <TabsTrigger value="meeting">会议纪要 ({mockMeetingMinutes.length})</TabsTrigger>
             <TabsTrigger value="documents">已生成文档</TabsTrigger>
           </TabsList>
@@ -823,7 +895,7 @@ export default function EventsPage() {
           {/* 监理日志 Tab */}
           <TabsContent value="daily-log" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mockDailyLogs.map((event) => (
+              {dailyLogRecords.map((event) => (
                 <Card key={event.id} className={`relative ${getBorderColor(event.type)}`}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
@@ -965,6 +1037,14 @@ export default function EventsPage() {
           record={selectedRecord}
           onEdit={handleEdit}
           onGenerateDocument={(recordId) => handleGenerateDocument(recordId, "daily-log")}
+        />
+
+        {/* 监理日志编辑模态框 */}
+        <DailyLogEditModal
+          isOpen={dailyLogEditModalOpen}
+          onClose={() => setDailyLogEditModalOpen(false)}
+          record={selectedRecord}
+          onSave={handleDailyLogSaveEdit}
         />
 
         {/* 会议纪要详情模态框 */}
